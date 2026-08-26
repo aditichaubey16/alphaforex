@@ -1,0 +1,16 @@
+# Virtual environment
+venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Local data — personal notes/positions/thesis, not for version control
+alphaforex.sqlite3
+
+# Local dev server logs
+server*.log
+
+# OS
+.DS_Store
+Thumbs.db

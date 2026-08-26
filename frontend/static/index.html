@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlphaForex</title>
+<meta name="theme-color" content="#5b7fff">
+<meta name="description" content="Live FX research: technical screens, daily opening rates, and a 2026 central-bank calendar.">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="icon" type="image/png" sizes="64x64" href="/static/favicon-64.png">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">Fx</span>
+    <h1>AlphaForex<span class="brand-tag">FX Research</span></h1>
+  </div>
+  <nav>
+    <button class="nav-btn active" data-view="pairs">
+      <svg viewBox="0 0 20 20" fill="none"><path d="M3 5.5h14M3 10h14M3 14.5h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span>Pairs</span>
+    </button>
+    <button class="nav-btn" data-view="calendar">
+      <svg viewBox="0 0 20 20" fill="none"><rect x="3.5" y="4.5" width="13" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 8h13M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span>Calendar</span>
+    </button>
+  </nav>
+</header>
+
+<main id="app">
+
+  <section id="view-pairs" class="view">
+    <div class="panel" id="pairs-groups-panel">
+      <h2>Market</h2>
+      <div id="group-cards" class="group-cards"></div>
+    </div>
+    <div class="panel hidden" id="pairs-table-panel">
+      <button id="pairs-back-btn" class="link-btn">&larr; Back to groups</button>
+      <div class="mw-table-head">
+        <h2 id="pairs-table-title">Rates</h2>
+        <span id="pairs-table-meta" class="mw-live-badge"><span class="live-dot"></span>Live</span>
+      </div>
+      <div id="pairs-table"></div>
+    </div>
+  </section>
+
+  <section id="view-pair" class="view hidden">
+    <button id="back-btn" class="link-btn">&larr; Back</button>
+    <div id="pair-content"></div>
+  </section>
+
+  <section id="view-calendar" class="view hidden">
+    <div class="panel">
+      <h2>2026 Central-Bank Calendar</h2>
+      <div class="name" style="margin-bottom:14px;">Rate decisions for every tracked currency, sourced from each central bank's own published 2026 schedule (Fed, ECB, BOE, BOJ, RBA, BOC, RBNZ, SNB, RBI). Filter by currency or add your own event.</div>
+      <div class="form-row" style="margin-bottom:16px;">
+        <select id="calendar-currency-filter">
+          <option value="">All currencies</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <select id="event-symbol">
+          <option value="">No specific pair</option>
+        </select>
+        <select id="event-currency">
+          <option value="">No specific currency</option>
+        </select>
+        <input id="event-type" type="text" placeholder="Event type (e.g. NFP, CPI)">
+        <input id="event-date" type="date">
+        <input id="event-desc" type="text" placeholder="Description (optional)">
+        <button id="event-add-btn">Add</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Upcoming</h2>
+      <div id="calendar-list"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col footer-brand">
+      <div class="row-with-avatar" style="margin-bottom:10px;">
+        <span class="brand-mark">Fx</span>
+        <span style="font-family:var(--font-display);font-weight:800;font-size:16px;">AlphaForex</span>
+      </div>
+      <p>A live FX research workspace — technical screens on majors and INR crosses, daily opening rates, and a 2026 central-bank calendar, sourced from Yahoo Finance and each bank's own published schedule.</p>
+    </div>
+
+    <div class="footer-col">
+      <h3>About</h3>
+      <p>Built by a Chartered Accountant with 5+ years of experience across Forex Trading, Accounting, Finance, Equity Research, and Automation — this app reflects that background, built to make FX research faster and more transparent.</p>
+    </div>
+
+    <div class="footer-col">
+      <h3>Contact</h3>
+      <p class="footer-name">Aditi Chaubey</p>
+      <a href="mailto:aditichaubey1805@gmail.com" class="footer-email">aditichaubey1805@gmail.com</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 AlphaForex. Research use — not trading advice.</span>
+    <a href="/api/export" class="footer-export">Export data (JSON backup)</a>
+  </div>
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
