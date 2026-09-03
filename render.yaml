@@ -1,0 +1,37 @@
+# Render blueprint — https://render.com/docs/blueprint-spec
+#
+# Free tier: no persistent disk, so alphaforex.sqlite3 resets on redeploy/
+# restart — same tradeoff AlphaDesk makes. Fine for a demo link; not for
+# notes/thesis/forecasts/calendar entries you want to keep long-term.
+#
+# To get real persistence later: upgrade this service to a paid instance
+# type (Starter or above), then add a `disks:` block here, e.g.:
+#
+#   disks:
+#     - name: alphaforex-data
+#       mountPath: /var/data
+#       sizeGB: 1
+#
+# ...and point ALPHAFOREX_DB_PATH (backend/db.py) at /var/data/alphaforex.sqlite3.
+#
+# No Render Cron Job here on purpose — Render's Cron Jobs aren't on the free
+# plan (min $1/mo). The 10:00 IST daily-open capture instead runs via a free
+# GitHub Actions scheduled workflow (.github/workflows/daily-open-capture.yml)
+# that calls POST /api/admin/capture-open-rates on this service. Set
+# ALPHAFOREX_CAPTURE_SECRET below to the same value as the
+# ALPHAFOREX_CAPTURE_SECRET repo secret in GitHub Actions.
+
+services:
+  - type: web
+    name: alphaforex
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ALPHAFOREX_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: ALPHAFOREX_CAPTURE_SECRET
+        sync: false

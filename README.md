@@ -53,9 +53,12 @@ machine except live `yfinance` lookups.
 ## Data sources
 
 - **Live rates**: `yfinance` (Yahoo Finance) — the same source AlphaDesk
-  uses for equities. Every pair's price, OHLC, and history come from one
-  live call per request; nothing is scraped or cached beyond the in-process
-  TTLs noted below.
+  uses for equities. `backend/market_data.py` caches each function's result
+  in-process — snapshots (price + indicators) for 30s, history/chart series
+  for 300s — so concurrent viewers looking at the same pair within that
+  window share one upstream call instead of one each. This is what protects
+  against the Yahoo per-IP rate limit AlphaDesk hit on Render once it had
+  real traffic (see its README).
 - **Daily opening rate**: captured once a day by
   `backend/tools/capture_open_rates.py` — see "Morning rate capture" below.
 - **2026 central-bank calendar**: compiled from each bank's own published
@@ -83,13 +86,21 @@ context for it.
 
 ## Morning rate capture (10:00 IST)
 
-`backend/tools/capture_open_rates.py` fetches a live price for every
-tracked pair and stores it as that IST calendar day's "open" (upsert —
-re-running the same day overwrites, so it's safe to run more than once).
-A Windows Scheduled Task named **"AlphaForex Daily Open Capture"** runs it
-automatically every day at 10:00 (the machine this was set up on is already
-on IST, so no timezone offset was needed — confirm yours is too, or adjust
-the trigger time in Task Scheduler).
+Two independent paths run the same job — `backend/capture.py`'s
+`run_capture()` — depending on whether you're running locally or deployed:
+
+**Local install** — `backend/tools/capture_open_rates.py` fetches a live
+price for every tracked pair and stores it as that IST calendar day's
+"open" (upsert — re-running the same day overwrites, so it's safe to run
+more than once). A Windows Scheduled Task named **"AlphaForex Daily Open
+Capture"** runs it automatically every day at 10:00 (the machine this was
+set up on is already on IST, so no timezone offset was needed — confirm
+yours is too, or adjust the trigger time in Task Scheduler). A local
+machine has to actually be on and awake at 10:00 for this to fire —
+if it's asleep, Task Scheduler's catch-up (`-StartWhenAvailable`) runs it
+late, and if the machine is off across multiple mornings, those days are
+simply missed. That unreliability is the whole reason the deployed path
+below exists.
 
 To recreate the task on another machine:
 
@@ -100,6 +111,49 @@ $action = New-ScheduledTaskAction -Execute $pythonExe -Argument "-m backend.tool
 $trigger = New-ScheduledTaskTrigger -Daily -At 10:00AM
 Register-ScheduledTask -TaskName "AlphaForex Daily Open Capture" -Action $action -Trigger $trigger -Description "Captures today's opening rate for every AlphaForex tracked pair at 10:00 IST."
 ```
+
+**Deployed (Render)** — there's no machine of yours that needs to be
+awake. A protected endpoint, `POST /api/admin/capture-open-rates`, runs the
+same capture over HTTP, gated on an `X-Capture-Secret` header matching the
+`ALPHAFOREX_CAPTURE_SECRET` env var (the endpoint refuses every request if
+that env var isn't set — no accidental "open" mode). A free GitHub Actions
+scheduled workflow, `.github/workflows/daily-open-capture.yml`, calls it
+daily at 04:30 UTC (10:00 IST) — see "Deploying to Render" below for setup.
+Render's own Cron Jobs were the more obvious choice but aren't on the free
+plan (minimum $1/mo), so this app doesn't use one.
+
+## Deploying to Render
+
+```bash
+git push  # if you haven't already
+```
+
+Then on [Render](https://dashboard.render.com): **New > Blueprint**, connect
+the `alphaforex` GitHub repo, and it picks up `render.yaml` automatically —
+one free web service, no cron job (see above for why). Render will prompt
+for the one `sync: false` env var during setup:
+
+- `ALPHAFOREX_CAPTURE_SECRET` — any random string; it just has to match the
+  same-named secret on the GitHub Actions side (see below).
+
+Once deployed, wire up the GitHub Actions side (Settings > Secrets and
+variables > Actions on the repo):
+
+- **Secret** `ALPHAFOREX_CAPTURE_SECRET` — the exact same value you set on
+  Render.
+- **Variable** `ALPHAFOREX_APP_URL` — the deployed app's URL (Render tells
+  you this after the first deploy — usually `https://alphaforex.onrender.com`
+  unless that subdomain was taken, in which case Render appends a suffix and
+  you'll need to update this variable to match).
+
+The workflow also has a manual trigger (`workflow_dispatch`) from the
+Actions tab if a morning gets missed and you don't want to wait for the
+next scheduled run.
+
+Free-tier Render services spin down after 15 minutes idle and take ~30-60s
+to wake on the next request — the first visitor of the day eats that cold
+start. AlphaDesk's README notes the same tradeoff and its git history has a
+keep-alive-ping commit if this becomes annoying enough to fix the same way.
 
 ## Loading the 2026 calendar
 
@@ -118,9 +172,15 @@ venv\Scripts\python.exe -m backend.tools.load_2026_calendar
   `CHFINR=X`, `CADINR=X` are the thinner-traded crosses most likely to lag).
 - No interest-rate-differential (carry) signal — deliberately technical-only
   for this version.
-- The scheduled capture task only runs while the machine is on; if it's
-  asleep or off at 10:00 the task is configured to run at the next
-  opportunity (`-StartWhenAvailable`), not exactly at 10:00.
+- The *local* scheduled capture task only runs while the machine is on; if
+  it's asleep or off at 10:00, Task Scheduler runs it late
+  (`-StartWhenAvailable`) or not at all that day. This doesn't affect the
+  deployed Render instance, which uses the GitHub Actions path instead (see
+  "Morning rate capture" above) — no local machine involved.
+- Render's free tier spins the service down after 15 minutes idle; the
+  first request after that pays a ~30-60s cold-start cost. The GitHub
+  Actions capture ping itself will wake it if it's the first hit of the
+  morning.
 - Notes are an append-only log rather than true diff-based version history.
 - Runs locally over plain HTTP — fine on `localhost`, not meant to be
   exposed beyond that without HTTPS in front of it.

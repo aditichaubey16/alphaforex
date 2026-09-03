@@ -1,0 +1,35 @@
+name: Daily opening-rate capture
+
+# Triggers the deployed Render instance's opening-rate capture at 10:00 IST
+# (04:30 UTC) — free alternative to Render's own Cron Jobs, which aren't on
+# the free plan. Requires two repo settings (Settings > Secrets and
+# variables > Actions):
+#   - Secret ALPHAFOREX_CAPTURE_SECRET: must match the same-named env var
+#     set on the Render service.
+#   - Variable ALPHAFOREX_APP_URL: the deployed app's base URL (defaults to
+#     https://alphaforex.onrender.com — update if Render assigned a
+#     different subdomain).
+#
+# Also runnable by hand from the Actions tab (workflow_dispatch) if a day
+# gets missed and you don't want to wait for tomorrow's schedule.
+
+on:
+  schedule:
+    - cron: "30 4 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call capture endpoint
+        run: |
+          url="${{ vars.ALPHAFOREX_APP_URL || 'https://alphaforex.onrender.com' }}/api/admin/capture-open-rates"
+          http_code=$(curl -s -o response.json -w "%{http_code}" -X POST "$url" \
+            -H "X-Capture-Secret: ${{ secrets.ALPHAFOREX_CAPTURE_SECRET }}")
+          echo "HTTP $http_code"
+          cat response.json
+          if [ "$http_code" -ge 300 ]; then
+            echo "Capture request failed"
+            exit 1
+          fi

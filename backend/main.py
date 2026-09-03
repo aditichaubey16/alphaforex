@@ -1,15 +1,16 @@
 """AlphaForex FastAPI app: JSON API + static frontend."""
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import db, market_data, pairs, timeutil
+from . import capture, db, market_data, pairs, timeutil
 
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend" / "static"
 _ASSET_VERSION = str(int(time.time()))
@@ -94,6 +95,22 @@ def get_todays_opens():
     until the 10:00 IST capture job has run at least once (see
     backend/tools/capture_open_rates.py)."""
     return db.list_daily_opens(timeutil.ist_today_str())
+
+
+@app.post("/api/admin/capture-open-rates")
+def post_capture_open_rates(x_capture_secret: str | None = Header(default=None)):
+    """Triggers the same opening-rate capture as the local Windows
+    Scheduled Task, over HTTP — this is what the free GitHub Actions cron
+    calls daily against the deployed Render instance (Render's own Cron
+    Jobs aren't on the free plan). Gated on a shared secret so this can't
+    be hit by randoms hammering the public URL: set ALPHAFOREX_CAPTURE_SECRET
+    in the deploy environment and pass the same value as the
+    X-Capture-Secret header. If the env var isn't set, the endpoint refuses
+    every request — there's no "open by default" mode."""
+    expected = os.environ.get("ALPHAFOREX_CAPTURE_SECRET")
+    if not expected or x_capture_secret != expected:
+        raise HTTPException(status_code=403, detail="Missing or invalid X-Capture-Secret")
+    return capture.run_capture()
 
 
 class NoteIn(BaseModel):
