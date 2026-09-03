@@ -143,6 +143,11 @@ nav {
 
 .view.hidden { display: none; }
 
+/* Generic hide utility — other .hidden rules below are historical
+   duplicates scoped to specific elements; this one covers any element
+   toggled with classList.add('hidden')/remove('hidden') from app.js. */
+.hidden { display: none; }
+
 .panel {
   background: linear-gradient(180deg, var(--panel), var(--bg-elevated));
   border: 1px solid var(--border-soft);
@@ -578,57 +583,6 @@ tr:hover td { background: var(--panel-2); }
   line-height: 1.5;
 }
 
-/* ---- portfolio ---- */
-
-.pnl-pos { color: var(--green); }
-.pnl-neg { color: var(--red); }
-
-.holding-row {
-  border-bottom: 1px solid var(--border-soft);
-  padding: 4px 0;
-}
-.holding-row:last-child { border-bottom: none; }
-
-.holding-summary {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 12px 4px;
-}
-
-.holding-figures { display: flex; gap: 18px; }
-.holding-figure .label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.4px; }
-.holding-figure .value { font-family: var(--font-mono); font-weight: 600; font-size: 14px; margin-top: 2px; }
-
-.rec-badge.rec-holding {
-  font-size: 11px;
-  padding: 5px 12px;
-}
-.rec-badge.rec-buy-more { background: var(--green-soft); color: var(--green); box-shadow: inset 0 0 0 1px rgba(47,191,116,0.35); }
-.rec-badge.rec-hold { background: var(--amber-soft); color: var(--amber); box-shadow: inset 0 0 0 1px rgba(234,173,63,0.35); }
-.rec-badge.rec-trim { background: rgba(234,173,63,0.14); color: #f0954a; box-shadow: inset 0 0 0 1px rgba(240,149,74,0.35); }
-.rec-badge.rec-exit { background: var(--red-soft); color: var(--red); box-shadow: inset 0 0 0 1px rgba(239,90,99,0.35); }
-
-.holding-details.hidden { display: none; }
-.holding-detail-block {
-  padding: 16px;
-  margin: 0 4px 12px;
-  background: var(--panel-2);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
-}
-
-.qual-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  margin-top: 4px;
-}
-
-.caution-item { color: var(--amber); }
-.positive-item { color: var(--green); }
-
 /* ---- tooltips ---- */
 
 .has-tip {
@@ -784,6 +738,7 @@ td.has-tip { display: table-cell; }
 .mw-table tr { cursor: pointer; }
 .mw-up { color: var(--green); }
 .mw-down { color: var(--red); }
+.mw-date { font-size: 10.5px; font-weight: 500; color: var(--text-faint); text-transform: none; letter-spacing: 0; }
 
 /* ---- multi-series chart legend ---- */
 

@@ -209,6 +209,13 @@ function fmt(n, digits = 2) {
   return n.toFixed(digits);
 }
 
+// Client-side date label only, for a "which day is this?" hint next to the
+// Open field — the actual open value always comes from the server's IST
+// calendar day, this is just a readable tag on it.
+function todayLabel() {
+  return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 function el(html) {
   const t = document.createElement("template");
   t.innerHTML = html.trim();
@@ -288,7 +295,7 @@ async function loadGroupTable(groupName) {
 
   const table = el(`
     <table class="mw-table">
-      <thead><tr><th>Pair</th><th>Open</th><th>High</th><th>Low</th><th>Last</th><th>Chg %</th><th>Call</th></tr></thead>
+      <thead><tr><th>Pair</th><th>Open <span class="mw-date">(${todayLabel()})</span></th><th>High</th><th>Low</th><th>Last</th><th>Chg %</th><th>Call</th></tr></thead>
       <tbody></tbody>
     </table>
   `);
@@ -315,7 +322,10 @@ async function loadGroupTable(groupName) {
       .then((data) => {
         const s = data.snapshot;
         const chgClass = s.change_pct > 0 ? "mw-up" : s.change_pct < 0 ? "mw-down" : "";
-        row.querySelector(".mw-open").textContent = s.open_today !== null && s.open_today !== undefined ? fmt(s.open_today, 5) : fmt(s.prev_close, 5);
+        const hasOpen = s.open_today !== null && s.open_today !== undefined;
+        row.querySelector(".mw-open").innerHTML = hasOpen
+          ? fmt(s.open_today, 5)
+          : `${fmt(s.prev_close, 5)} <span class="mw-date">(prev close)</span>`;
         row.querySelector(".mw-high").textContent = fmt(s.day_high, 5);
         row.querySelector(".mw-low").textContent = fmt(s.day_low, 5);
         row.querySelector(".mw-last").textContent = fmt(s.price, 5);
@@ -385,7 +395,7 @@ async function openPair(symbol) {
       </div>
       <div class="kpi-grid">
         <div class="kpi"><div${tipAttrs("Price", "label")}>Price</div><div class="value">${fmt(s.price, 5)}</div></div>
-        <div class="kpi"><div class="label">Today's Open</div><div class="value">${s.open_today !== null && s.open_today !== undefined ? fmt(s.open_today, 5) : fmt(s.prev_close, 5)}</div>${s.change_from_open_pct !== null && s.change_from_open_pct !== undefined ? `<div class="kpi-disclaimer" style="color:${s.change_from_open_pct >= 0 ? "var(--green)" : "var(--red)"};">${s.change_from_open_pct >= 0 ? "+" : ""}${s.change_from_open_pct}% since open</div>` : `<div class="kpi-disclaimer">Not captured yet today — showing prev. close</div>`}</div>
+        <div class="kpi"><div class="label">Open (${todayLabel()})</div><div class="value">${s.open_today !== null && s.open_today !== undefined ? fmt(s.open_today, 5) : fmt(s.prev_close, 5)}</div>${s.change_from_open_pct !== null && s.change_from_open_pct !== undefined ? `<div class="kpi-disclaimer" style="color:${s.change_from_open_pct >= 0 ? "var(--green)" : "var(--red)"};">${s.change_from_open_pct >= 0 ? "+" : ""}${s.change_from_open_pct}% since open</div>` : `<div class="kpi-disclaimer">Not captured yet today — showing prev. close</div>`}</div>
         <div class="kpi"><div${tipAttrs("Day Change %", "label")}>Day Change %</div><div class="value">${fmt(s.change_pct)}%</div></div>
         <div class="kpi"><div${tipAttrs("1-Week Change %", "label")}>1W %</div><div class="value">${fmt(s.week_change_pct)}%</div></div>
         <div class="kpi"><div${tipAttrs("1-Month Change %", "label")}>1M %</div><div class="value">${fmt(s.month_change_pct)}%</div></div>
